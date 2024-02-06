@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Shooter</title>
+    <style>
+        body {
+            width: 100%;
+            overflow: hidden;
+            background: url("space.jpg");
+            background-size: cover;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="gameCanvas" width="500" height="500"></canvas>
+    <div id="points">0</div>
+    <audio id="bulletSound" src="bullet.mp3"></audio>
+    <audio id="gameOverSound" src="mixkit-game-over-trombone-1940.wav"></audio>
+    <audio id="boomSound" src="spaceship boom.mp3"></audio>
+    <audio id="youWinSound" src="you-win-sequence-2-183949.mp3"></audio>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const pointsDisplay = document.getElementById("points");
+
+        let jetLeftPosition = 50;
+        let points = 0;
+        let bullets = [];
+        let rocks = [];
+        let gameRunning = true;
+
+        const jetImage = new Image();
+        jetImage.src = "rocket.png";
+
+        const bulletImage = new Image();
+        bulletImage.src = "bullet.png";
+
+        const rockImage = new Image();
+        rockImage.src = "alien.png";
+
+        const bulletSound = document.getElementById("bulletSound");
+        const gameOverSound = document.getElementById("gameOverSound");
+        const boomSound = document.getElementById("boomSound");
+        const youWinSound = document.getElementById("youWinSound");
+
+        function drawJet() {
+            ctx.drawImage(jetImage, jetLeftPosition, canvas.height - 40, 40, 40);
+        }
+
+        function drawBullet() {
+            bullets.forEach(bullet => {
+                ctx.drawImage(bulletImage, bullet.x, bullet.y, 5, 15);
+            });
+        }
+
+        function drawRock() {
+            rocks.forEach(rock => {
+                ctx.drawImage(rockImage, rock.x, rock.y, 30, 30);
+            });
+        }
+
+        function update() {
+            if (!gameRunning) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawJet();
+            drawBullet();
+            drawRock();
+            pointsDisplay.innerHTML = points;
+
+            // Update bullet positions
+            bullets.forEach(bullet => {
+                bullet.y -= 5;
+            });
+
+            // Check for bullet collision with rocks
+            bullets.forEach(bullet => {
+                rocks.forEach((rock, rockIndex) => {
+                    if (bullet.x < rock.x + 30 && bullet.x + 5 > rock.x && bullet.y < rock.y + 30 && bullet.y + 15 > rock.y) {
+                        rocks.splice(rockIndex, 1);
+                        points++;
+                        boomSound.play();
+                    }
+                });
+            });
+
+            // Update rock positions
+            rocks.forEach(rock => {
+                rock.y += 2;
+            });
+
+            // Remove rocks that go beyond canvas
+            rocks = rocks.filter(rock => rock.y < canvas.height);
+
+            // Check if the game is over
+            if (rocks.some(rock => rock.y + 30 >= canvas.height - 40) || rocks.some(rock => jetLeftPosition + 40 > rock.x && jetLeftPosition < rock.x + 30 && canvas.height - 40 <= rock.y + 30)) {
+                gameOver();
+            } else if (rocks.length === 0) {
+                if (points >= 2) {
+                    youWin();
+                }
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if (!gameRunning) return;
+
+            if (e.key == "ArrowLeft" && jetLeftPosition > 0) {
+                jetLeftPosition -= 10;
+            } else if (e.key == "ArrowRight" && jetLeftPosition < canvas.width - 40) {
+                jetLeftPosition += 10;
+            } else if (e.key == "ArrowUp" || e.keyCode == 32) {
+                // ตรวจสอบว่าลูกศรชนภาพหรือไม่
+                let bulletCollided = bullets.some(bullet => bullet.x > jetLeftPosition && bullet.x < jetLeftPosition + 40 && bullet.y > canvas.height - 40);
+
+                // ถ้าไม่มีการชนกับภาพ จึงจะสร้างลูกศรใหม่
+                if (!bulletCollided) {
+                    bullets.push({
+                        x: jetLeftPosition + 18,
+                        y: canvas.height - 50
+                    });
+
+                }
+                bulletSound.play();
+            }
+        });
+
+
+
+
+        setInterval(() => {
+            if (!gameRunning) return;
+
+            rocks.push({
+                x: Math.random() * (canvas.width - 30),
+                y: -30
+            });
+        }, 1000);
+
+        update();
+        // สร้างอ็อบเจกต์สำหรับเสียงเมื่อเกมสิ้นสุด
+        const gameOverSound1 = new Audio("mixkit-game-over-trombone-1940.wav");
+
+        function gameOver() {
+            gameRunning = false;
+            gameOverSound.play();
+            gameOverSound1.play();
+            alert("Game Over! Your score: " + points);
+            window.location.reload();
+        }
+        const youWinSound1 = new Audio("you-win-sequence-2-183949.mp3");
+
+
+        function youWin() {
+            gameRunning = false;
+            youWinSound.play();
+            youWinSound1.play();
+            alert("You Win! Your score: " + points);
+            window.location.reload();
+        }
+    </script>
+</body>
+
+</html>
